@@ -27,7 +27,6 @@ const WithAuth = (req, res, next) => {
               .then(foundUser =>{
                   //o usuário da requisição passa a ser o usuário encontrado pelo findOne
                   req.user = foundUser
-                  console.log(foundUser)
                   next()
               })
               .catch((err) => {
