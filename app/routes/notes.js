@@ -3,7 +3,8 @@ var router = express.Router();
 //puxar o model
 const Note = require('../models/note')
 //puxar o middleware
-const withAuth = require('../middlewares/auth')
+const withAuth = require('../middlewares/auth');
+const { findOneAndUpdate } = require('../models/note');
 
 
 // ----------  Criar a rota de criação de nota
@@ -60,25 +61,21 @@ router.put('/:id', withAuth, async (req, res) => {
   let {title, body} = req.body
   //Trazer o ID da nota usando o req.params
   let {id} = req.params
-
+  console.log(id)
   try{
     //buscar a nota usando a ID
-    let note = await Note.findById(id)
+    let note = await Note.findById(id) 
     //checar se o user é o dono da nota
-    if (isOwner(req.user, note)){
-      //usar o método findOneAndUpdate para atualizar a nota
-      let updatedNote = await Note.findOneAndUpdate(
-        //primeiro argumento é o ID pra ela procurar
-        id,
-        //o segundo argumento é usar o $set para definir quais os campos a alterar
-        { $set: {title:title, body:body} },
-        //terceiro argumento é o UPSERT - que vai dizer pro mongo que ele tem que me devolver a nota nova atualizada
-        {upsert:true, 'new':true}
-      )
-      //no final, devolvo a nota atualizada
-      res.json(updatedNote)
+    if (!isOwner(req.user, note)){
+      return res.status(403).json({error:'Permission denied'})
     }
-    else res.status(403).json({error:'Permission denied'})
+    let updatedNote = await Note.findOneAndUpdate(
+      {_id:id},
+      {$set: {title:title, body:body} },
+      {upsert:false, "new":true}
+    )
+    res.json(updatedNote)
+
   } catch(e) {
     res.status(500).json({error:'Unable to update note'})
   }
